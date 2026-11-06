@@ -30,7 +30,8 @@ details{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin
 .kv{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
 .kv td{border-bottom:1px solid var(--line);padding:7px 6px;vertical-align:top}
 .kv td:first-child{width:96px;color:var(--muted);white-space:nowrap;font-weight:600}
-.detailbox{border-top:1px dashed var(--line);margin-top:10px;padding-top:6px}
+.detailbox{background:#eef2f7;border:1px solid #dbe4ee;border-radius:8px;margin-top:10px;padding:10px 12px}
+.detailbox .kv td{border-bottom-color:#dbe4ee}
 .steps{display:flex;gap:6px;margin:10px 0} .step{flex:1;text-align:center;padding:8px;border-radius:8px;background:#e5e7eb;font-size:13px} .step.on{background:#111827;color:#fff}
 .hidden{display:none!important}
 .account{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:6px 0;cursor:pointer} .account.sel{border-color:#111827;background:#f9fafb;box-shadow:0 0 0 1px #111827}
@@ -90,13 +91,13 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 </select></div>
 <div><label>开仓日期 *</label><input id="fDate" type="date"></div>
 <div><label>数量 *</label><input id="fQty" type="number" min="0" step="1" placeholder="正股=股数，期权=张数"></div>
-<div id="wrapUnderlying"><label>标的现价（USD）* <span class="small">期权必填，用于算行权/仓位</span></label><input id="fUnderlying" type="number" min="0" step="0.01" placeholder="例如：68.50"></div>
-<div id="wrapEntry"><label>成交价（USD）*</label><input id="fEntry" type="number" min="0" step="0.01" placeholder="正股=股价；期权=权利金/张"></div>
-<div id="wrapStrike" class="hidden"><label>行权价 Strike（USD）*</label><input id="fStrike" type="number" min="0" step="0.01"></div>
-<div id="wrapLongStrike" class="hidden"><label>买入腿行权价（USD）* <span class="small">价差必填，低于卖出腿</span></label><input id="fLongStrike" type="number" min="0" step="0.01"></div>
+<div id="wrapUnderlying"><label id="lblUnderlying">标的股价现价（USD）* <span class="small">期权必填，用于算行权/仓位</span></label><input id="fUnderlying" type="number" min="0" step="0.01" placeholder="例如：68.50"></div>
+<div id="wrapEntry"><label id="lblEntry">成交价（股价，USD）*</label><input id="fEntry" type="number" min="0" step="0.01" placeholder="正股=股价；期权=权利金/张"></div>
+<div id="wrapStrike" class="hidden"><label>行权价 Strike（标的股价，USD）*</label><input id="fStrike" type="number" min="0" step="0.01"></div>
+<div id="wrapLongStrike" class="hidden"><label>买入腿行权价（标的股价，USD）* <span class="small">价差必填，低于卖出腿</span></label><input id="fLongStrike" type="number" min="0" step="0.01"></div>
 <div id="wrapExpiry" class="hidden"><label>行权日 / 到期日 *</label><input id="fExpiry" type="date"></div>
 <div id="wrapDelta" class="hidden"><label>Delta（可选，绝对值）</label><input id="fDelta" type="number" min="0" max="1" step="0.01" placeholder="例如：0.15"></div>
-<div id="wrapTp" class="hidden"><label>止盈目标价（USD，可选）<span class="small">正股专用，笔记无固定口径，由你自己定</span></label><input id="fTp" type="number" min="0" step="0.01" placeholder="例如：60.00，留空=不设固定止盈"></div>
+<div id="wrapTp" class="hidden"><label>止盈目标价（股价，USD，可选）<span class="small">正股专用，笔记无固定口径，由你自己定</span></label><input id="fTp" type="number" min="0" step="0.01" placeholder="例如：60.00，留空=不设固定止盈"></div>
 </div>
 <label>开仓理由（必填一句话，写清你当时为什么看不跌/为什么收租）</label>
 <input id="fReason" placeholder="例如：QQQ 站上 MA200×1.04，趋势向上，卖 30 天虚值 Put 收租">
@@ -108,8 +109,8 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 <div id="step2" class="hidden">
 <h3>灵魂三问 · 必须逐项回答，默认值可改</h3>
 <div class="card" style="background:#f9fafb">
-<label>Q1 · 极端压力测试：如果明天标的因黑天鹅跳空低开 15%，我的止损价是多少？这笔亏损我能否面不改色接受？</label>
-<div class="grid"><div><label>止损价（USD）</label><input id="q1Stop" type="number" step="0.01"></div>
+<label>Q1 · 极端压力测试：如果明天标的因黑天鹅跳空低开 15%，我的止损价是多少？（正股 / 卖方期权填标的股价，买方期权填权利金）这笔亏损我能否面不改色接受？</label>
+<div class="grid"><div><label id="lblQ1Stop">止损价（股价，USD）</label><input id="q1Stop" type="number" step="0.01"></div>
 <div><label>该情景预估亏损（USD）</label><input id="q1Loss" type="number" step="0.01"></div>
 <div><label>能否接受？</label><select id="q1Accept"><option value="yes">能接受</option><option value="no">不能接受——应减仓/放弃</option></select></div></div>
 <p class="small" id="q1Formula"></p>
@@ -129,7 +130,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 </div>
 
 <div id="step3" class="hidden">
-<h3>系统按机械化体系算出的止盈 / 止损</h3>
+<h3>系统按机械化体系算出的止盈 / 止损 <span class="small">（正股=股价，期权=权利金 / 张）</span></h3>
 <div id="calcBox"></div>
 <div class="row"><button id="btnBack2">← 上一步</button><button class="primary" id="btnSaveTrade">确认无误，保存这笔交易</button></div>
 <p class="small">保存后即按此执行。系统不接实时行情、不会自动帮你平仓——止损价是你的预先承诺，触发时请手动执行。</p>
@@ -157,6 +158,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 <li><b>接盘后 Day 1：</b>杠杆 ETF 成本下 8%~10% 硬止损（对应底层约 3%），普通正股 10%~15%；3~5 天站不回行权价或 5 日均线，第 5 天收盘前走；跌破支撑先砍 50%，剩余做 Collar，绝不裸持死扛。</li>
 <li><b>正股止盈：</b>笔记未给固定口径，由用户在第 1 步或第 3 步手动填目标价，留空=不设固定止盈，以硬止损 + 时间止损离场；买入期权为 V1 约定口径（止盈 2 倍权利金、止损权利金亏 50%）。</li>
 <li><b>Q1 联动：</b>止损价与预估亏损双向联动，正股按（成交价−止损价）×股数反推，卖方期权按内在价值口径反推，改一边另一边马上重算。</li>
+<li><b>价格单位（防误会）：</b>正股所有价格都是<b>股价</b>；期权的成交价 / 止盈 / 止损都是<b>权利金 / 张</b>（卖出期权是买回价，买入期权是卖出价）；标的现价、行权价、接盘硬止损、Q1（卖方）/ Q2 砍价都是<b>标的股价</b>，买入期权的 Q1 止损价除外（权利金 / 张）。</li>
 </ul>
 </details>
 <p class="small">免责：本系统是个人记录与纪律工具，按固定规则机械计算，不是投资建议。3 倍杠杆 ETF 有显著波动损耗与路径依赖风险。</p>
@@ -189,6 +191,12 @@ function isOpt(k){return ["sell_put","bull_put_spread","sell_call","buy_call","b
 function isSellOpt(k){return ["sell_put","bull_put_spread","sell_call"].includes(k);}
 function kindLabel(k){return {"stock_long":"正股买入","stock_short":"正股做空","sell_put":"卖出 Put","bull_put_spread":"牛市看跌价差","sell_call":"卖出 Call","buy_call":"买入 Call","buy_put":"买入 Put"}[k]||k;}
 function assetLabel(a){return a==="leveraged"?"3倍杠杆ETF":"优质正股/宽基";}
+/* ---- 价格类型标注：所有价格必须说清是股价还是权利金，避免误会 ---- */
+function entryLabel(k){return isOpt(k)?"成交价（权利金 / 张，USD）":"成交价（股价，USD）";}
+function tpLabel(k){ if(k.startsWith("stock")) return "止盈（股价）"; return isSellOpt(k)?"止盈（权利金 / 张 · 买回价）":"止盈（权利金 / 张 · 卖出价）"; }
+function slLabel(k){ if(k.startsWith("stock")) return "止损（股价）"; return isSellOpt(k)?"止损（权利金 / 张 · 买回价）":"止损（权利金 / 张 · 卖出价）"; }
+function q1StopLabel(k){ if(k.startsWith("stock")) return "止损价（股价，USD）"; return isSellOpt(k)?"止损价（标的股价，USD）":"止损价（权利金 / 张，USD）"; }
+function entryTypeShort(k){return isOpt(k)?"权利金 / 张":"股价";}
 
 /* ---- 机械化计算：全部按笔记口径，买入期权为 V1 约定并在界面注明 ---- */
 function calcPlan(t){
@@ -197,21 +205,21 @@ function calcPlan(t){
   const p={tpPrice:null,slPrice:null,tpNote:"",slNote:"",hardStop:null,timeStopDays:5,maxLoss:null,scenarioLoss:null};
   if(t.kind==="stock_long"){
     p.slPrice=+(entry*(lev?0.91:0.875)).toFixed(2); p.hardStop=p.slPrice;
-    p.slNote="硬止损：成本价下 "+(lev?"9%（杠杆ETF，8%~10%中值）":"12.5%（普通正股，10%~15%中值）");
+    p.slNote="硬止损（股价）：成本股价下 "+(lev?"9%（杠杆ETF，8%~10%中值）":"12.5%（普通正股，10%~15%中值）");
     p.tpPrice=t.tpPriceUser?+Number(t.tpPriceUser).toFixed(2):null;
-    p.tpNote=p.tpPrice!=null?"止盈：用户手动设定的目标价（笔记未给正股固定口径）":"笔记未给正股固定止盈口径：留空=不设固定止盈，以硬止损+时间止损离场";
+    p.tpNote=p.tpPrice!=null?"止盈（股价）：用户手动设定的目标股价（笔记未给正股固定口径）":"笔记未给正股固定止盈口径：留空=不设固定止盈（股价），以硬止损+时间止损离场";
     p.scenarioLoss=+(entry*qty*0.25).toFixed(2);
   } else if(t.kind==="stock_short"){
     p.slPrice=+(entry*(lev?1.09:1.125)).toFixed(2); p.hardStop=p.slPrice;
-    p.slNote="硬止损：成本价上 "+(lev?"9%":"12.5%");
+    p.slNote="硬止损（股价）：成本股价上 "+(lev?"9%":"12.5%");
     p.tpPrice=t.tpPriceUser?+Number(t.tpPriceUser).toFixed(2):null;
-    p.tpNote=p.tpPrice!=null?"止盈：用户手动设定的目标价（笔记未给正股固定口径）":"笔记未给正股固定止盈口径：留空=不设固定止盈（可手动填）";
+    p.tpNote=p.tpPrice!=null?"止盈（股价）：用户手动设定的目标股价（笔记未给正股固定口径）":"笔记未给正股固定止盈口径：留空=不设固定止盈（股价，可手动填）";
     p.scenarioLoss=+(entry*qty*0.25).toFixed(2);
   } else if(isSellOpt(t.kind)){
     const tp=+(entry*0.4).toFixed(2), sl=+(entry*2.5).toFixed(2);
     p.tpPrice=tp; p.slPrice=sl;
-    p.tpNote="止盈：买回价 = 卖出权利金 × 0.40（赚 60%，在 50%~70% 区间内）";
-    p.slNote="止损：买回价 = 卖出权利金 × 2.5（在 2~3 倍区间内）；或标的跌破行权价 "+(strike?fmt(strike):"—")+" 时直接认赔";
+    p.tpNote="止盈（权利金 / 张 · 买回价）：买回价 = 卖出权利金 × 0.40（赚 60%，在 50%~70% 区间内）";
+    p.slNote="止损（权利金 / 张 · 买回价）：买回价 = 卖出权利金 × 2.5（在 2~3 倍区间内）；或标的股价跌破行权价 "+(strike?fmt(strike):"—")+" 时直接认赔";
     p.hardStop=strike? (t.kind==="sell_call"? +(strike*1.10).toFixed(2) : +(strike*(lev?0.91:0.875)).toFixed(2)) : null;
     if(t.kind==="bull_put_spread"&&strike&&t.longStrike){
       p.maxLoss=+(((strike-Number(t.longStrike))*100*qty)-(entry*100*qty)).toFixed(2);
@@ -222,8 +230,8 @@ function calcPlan(t){
     } else { p.scenarioLoss=Math.max(0,+(((u*1.25)-strike)*100*qty - entry*100*qty).toFixed(2)); }
   } else { /* buy_call / buy_put : V1 约定 */
     p.tpPrice=+(entry*2).toFixed(2); p.slPrice=+(entry*0.5).toFixed(2);
-    p.tpNote="V1 约定（笔记以卖方为主）：卖出价 = 买入权利金 × 2（赚 100%）";
-    p.slNote="V1 约定：卖出价 = 买入权利金 × 0.5（亏 50% 止损）";
+    p.tpNote="止盈（权利金 / 张 · 卖出价）：V1 约定（笔记以卖方为主）：卖出价 = 买入权利金 × 2（赚 100%）";
+    p.slNote="止损（权利金 / 张 · 卖出价）：V1 约定：卖出价 = 买入权利金 × 0.5（亏 50% 止损）";
     p.maxLoss=+(entry*100*qty).toFixed(2); p.scenarioLoss=p.maxLoss;
   }
   return p;
@@ -252,11 +260,11 @@ function q1StopFromLoss(t,loss){
   return +(Number(t.strike)-(loss+e*100*q)/(100*q)).toFixed(2);
 }
 function q1FormulaText(t){
-  if(t.kind==="stock_long") return "公式：预估亏损 =（成交价 − 止损价）× 股数；反推：止损价 = 成交价 − 预估亏损 ÷ 股数。";
-  if(t.kind==="stock_short") return "公式：预估亏损 =（止损价 − 成交价）× 股数；反推：止损价 = 成交价 + 预估亏损 ÷ 股数。";
-  if(t.kind==="buy_call"||t.kind==="buy_put") return "公式：预估亏损 =（买入权利金 − 止损时权利金）× 100 × 张数；反推：止损时权利金 = 买入权利金 − 预估亏损 ÷（100 × 张数）。";
-  if(t.kind==="sell_call") return "公式：预估亏损 = max(0，止损时标的价格 − 行权价）× 100 × 张数 − 已收权利金；反推同式。";
-  return "公式：预估亏损 = max(0，行权价 − 止损时标的价格）× 100 × 张数 − 已收权利金（价差封顶于最大亏损）；反推同式。仅按内在价值口径，不含时间价值。";
+  if(t.kind==="stock_long") return "公式（股价口径）：预估亏损 =（成交股价 − 止损股价）× 股数；反推：止损股价 = 成交股价 − 预估亏损 ÷ 股数。";
+  if(t.kind==="stock_short") return "公式（股价口径）：预估亏损 =（止损股价 − 成交股价）× 股数；反推：止损股价 = 成交股价 + 预估亏损 ÷ 股数。";
+  if(t.kind==="buy_call"||t.kind==="buy_put") return "公式（权利金口径）：预估亏损 =（买入权利金 − 止损时权利金）× 100 × 张数；反推：止损时权利金 = 买入权利金 − 预估亏损 ÷（100 × 张数）。这里的止损价是权利金价格，不是股价。";
+  if(t.kind==="sell_call") return "公式：预估亏损 = max(0，止损时标的股价 − 行权价）× 100 × 张数 − 已收权利金；反推同式。这里的止损价是标的股价，不是权利金。";
+  return "公式：预估亏损 = max(0，行权价 − 止损时标的股价）× 100 × 张数 − 已收权利金（价差封顶于最大亏损）；反推同式。这里的止损价是标的股价，不是权利金。仅按内在价值口径，不含时间价值。";
 }
 function q2Label(will){
   return will==="hold"?"真愿意持有":will==="trend"?"只看短期趋势，不想长期持有":"只贪权利金";
@@ -320,6 +328,10 @@ function syncKindUI(){
   $("wrapLongStrike").classList.toggle("hidden",k!=="bull_put_spread");
   $("wrapTp").classList.toggle("hidden",opt);
   $("wrapUnderlying").classList.toggle("hidden",false);
+  /* 价格类型随交易类型动态切换：正股=股价，期权=权利金/张；标的现价永远是股价 */
+  const lblEntry=$("lblEntry"); if(lblEntry) lblEntry.textContent=entryLabel(k)+" *";
+  const fEntry=$("fEntry"); if(fEntry) fEntry.placeholder=opt?"例如：0.85（权利金 / 张）":"例如：50.87（股价）";
+  const lblU=$("lblUnderlying"); if(lblU) lblU.innerHTML='标的股价现价（USD）* <span class="small">期权必填，用于算行权/仓位；正股可填当前股价</span>';
   const t=$("fTicker").value.trim().toUpperCase();
   if(LEV.includes(t)) $("fAsset").value="leveraged";
 }
@@ -337,9 +349,9 @@ function readStep1(){
 function validateStep1(t){
   if(!t.accountId) return "请先新建并选择一个账户";
   if(!t.ticker) return "请填代码"; if(!t.qty||t.qty<=0) return "请填大于 0 的数量";
-  if(t.entryPrice==null||isNaN(t.entryPrice)||t.entryPrice<0) return "请填成交价";
+  if(t.entryPrice==null||isNaN(t.entryPrice)||t.entryPrice<0) return "请填"+entryLabel(t.kind);
   if(!t.reason) return "请填一句话开仓理由（防策略漂移）";
-  if(isOpt(t.kind)){ if(!t.strike) return "期权请填行权价"; if(!t.expiry) return "期权请填行权日"; if(!t.underlyingPrice) return "期权请填标的现价"; if(t.kind==="bull_put_spread"&&(!t.longStrike||t.longStrike>=t.strike)) return "价差请填低于卖出腿的买入腿行权价"; }
+  if(isOpt(t.kind)){ if(!t.strike) return "期权请填行权价（标的股价）"; if(!t.expiry) return "期权请填行权日"; if(!t.underlyingPrice) return "期权请填标的股价现价"; if(t.kind==="bull_put_spread"&&(!t.longStrike||t.longStrike>=t.strike)) return "价差请填低于卖出腿的买入腿行权价（标的股价）"; }
   else { if(!t.underlyingPrice) t.underlyingPrice=t.entryPrice; }
   return null;
 }
@@ -356,7 +368,8 @@ $("btnToStep2").onclick=()=>{
   $("q2Will").innerHTML = isStock
     ? `<option value="trend">只看短期趋势/反弹，不想长期持有</option><option value="hold">真愿意长期持有</option>`
     : `<option value="premium">只贪权利金，不想长期持有</option><option value="hold">真愿意在行权价长期持有</option>`;
-  $("q2CutLabel").textContent = isStock ? "跌破什么价格必须立刻砍掉正股？（USD）" : "跌破什么价格必须立刻砍掉期权？（USD）";
+  $("q2CutLabel").textContent = isStock ? "跌破什么价格必须立刻砍掉正股？（股价，USD）" : "跌破什么价格必须立刻砍掉期权？（标的股价，USD）";
+  const lblQ1=$("lblQ1Stop"); if(lblQ1) lblQ1.textContent=q1StopLabel(t.kind);
   const q1Stop = isStock ? plan.slPrice : (t.kind==="buy_call"||t.kind==="buy_put") ? +(Number(t.entryPrice)*0.5).toFixed(2) : +((Number(t.underlyingPrice)||Number(t.entryPrice))*0.85).toFixed(2);
   $("q1Stop").value=q1Stop??""; $("q1Loss").value=q1LossFromStop(t,q1Stop)??"";
   $("q1Formula").textContent=q1FormulaText(t);
@@ -364,7 +377,7 @@ $("btnToStep2").onclick=()=>{
   $("q1Stop").oninput=()=>{ if(q1Sync) return; const v=Number($("q1Stop").value); if(isNaN(v)) return; q1Sync=true; const l=q1LossFromStop(t,v); if(l!=null) $("q1Loss").value=l.toFixed(2); q1Sync=false; };
   $("q1Loss").oninput=()=>{ if(q1Sync) return; const v=Number($("q1Loss").value); if(isNaN(v)) return; q1Sync=true; const s=q1StopFromLoss(t,v); if(s!=null) $("q1Stop").value=s.toFixed(2); q1Sync=false; };
   $("q2Cut").value=t.strike||plan.slPrice||"";
-  $("q2Hint").textContent = isOpt(t.kind)? "只贪权利金时，跌破行权价即逻辑证伪，应砍期权；真愿意持有时，砍价改为接盘硬止损价。" : "正股：跌破硬止损价即离场；只看短期趋势时，止盈目标价在第 1 步填写。";
+  $("q2Hint").textContent = isOpt(t.kind)? "只贪权利金时，标的股价跌破行权价即逻辑证伪，应砍期权；真愿意持有时，砍价改为接盘硬止损价（标的股价）。" : "正股：股价跌破硬止损价即离场；只看短期趋势时，止盈目标价（股价）在第 1 步填写。";
   $("q3Days").value=5; $("q3Plan").value="第 5 天收盘前无条件平仓离场";
   showStep(2);
 };
@@ -378,13 +391,14 @@ $("btnToStep3").onclick=()=>{
   const plan=draft.plan, t=draft;
   const warns=warningsFor(t,plan);
   $("calcBox").innerHTML=`
+  <p class="small" style="margin:0 0 8px">价格单位说明：正股的止盈 / 止损都是<b>股价</b>；卖出期权的止盈 / 止损都是<b>权利金 / 张（买回价）</b>；买入期权的止盈 / 止损都是<b>权利金 / 张（卖出价）</b>；接盘硬止损与 Q1 / Q2 的砍价都是<b>标的股价</b>，买入期权的 Q1 除外（权利金）。</p>
   <table><tr><th>项目</th><th>数值</th><th>口径</th></tr>
-  <tr><td>止盈</td><td><b>${t.kind.startsWith("stock")?`<input id="calcTp" type="number" min="0" step="0.01" value="${plan.tpPrice!=null?plan.tpPrice:""}" placeholder="留空=不设固定止盈">`:(plan.tpPrice!=null?fmt(plan.tpPrice):"—（无固定止盈）")}</b></td><td>${esc(plan.tpNote)}${t.kind.startsWith("stock")?"（正股止盈由你手动填，可在此处再改）":""}</td></tr>
-  <tr><td>止损</td><td><b>${plan.slPrice!=null?fmt(plan.slPrice):"—"}</b></td><td>${esc(plan.slNote)}</td></tr>
-  <tr><td>接盘后硬止损（标的价格）</td><td><b>${plan.hardStop!=null?fmt(plan.hardStop):"—"}</b></td><td>杠杆 ETF 成本下 8%~10%，普通正股 10%~15%</td></tr>
+  <tr><td>${tpLabel(t.kind)}</td><td><b>${t.kind.startsWith("stock")?`<input id="calcTp" type="number" min="0" step="0.01" value="${plan.tpPrice!=null?plan.tpPrice:""}" placeholder="留空=不设固定止盈">`:(plan.tpPrice!=null?fmt(plan.tpPrice):"—（无固定止盈）")}</b></td><td>${esc(plan.tpNote)}${t.kind.startsWith("stock")?"（正股止盈由你手动填股价，可在此处再改）":""}</td></tr>
+  <tr><td>${slLabel(t.kind)}</td><td><b>${plan.slPrice!=null?fmt(plan.slPrice):"—"}</b></td><td>${esc(plan.slNote)}</td></tr>
+  <tr><td>接盘后硬止损（标的股价）</td><td><b>${plan.hardStop!=null?fmt(plan.hardStop):"—"}</b></td><td>杠杆 ETF 成本股价下 8%~10%，普通正股 10%~15%</td></tr>
   <tr><td>时间止损</td><td><b>${draft.q3.maxWaitDays} 个交易日</b></td><td>站不回行权价或 5 日均线，${esc(draft.q3.plan)}</td></tr>
   ${plan.maxLoss!=null?`<tr><td>价差/买方最大亏损</td><td><b>${fmt(plan.maxLoss)}</b></td><td>价差已锁死；买方最大亏全部权利金</td></tr>`:""}
-  <tr><td>三问</td><td colspan="2">Q1 止损 ${fmt(draft.q1.stopPrice)}，预估亏 ${fmt(draft.q1.acceptLoss)}（${draft.q1.canAccept?"能接受":"不能接受"}）；Q2 ${q2Label(draft.q2.will)}，砍价 ${fmt(draft.q2.cutPrice)}；Q3 最多等 ${draft.q3.maxWaitDays} 天</td></tr></table>
+  <tr><td>三问</td><td colspan="2">Q1 止损 ${fmt(draft.q1.stopPrice)}（${q1StopLabel(t.kind).includes("权利金")?"权利金 / 张":"标的股价 / 股价"}），预估亏 ${fmt(draft.q1.acceptLoss)}（${draft.q1.canAccept?"能接受":"不能接受"}）；Q2 ${q2Label(draft.q2.will)}，砍价 ${fmt(draft.q2.cutPrice)}（标的股价）；Q3 最多等 ${draft.q3.maxWaitDays} 天</td></tr></table>
   ${warns.map(w=>`<div class="${w.level==="danger"?"dangerbox":w.level==="warn"?"warn":"okbox"}">${esc(w.text)}</div>`).join("")}
   ${warns.some(w=>w.level==="danger")?`<label><input type="checkbox" id="ackDrift" style="width:auto"> 我已知晓上述红色风险（策略漂移 / 仓位超限），仍坚持按此保存，并承担后果</label>`:""}`;
   showStep(3);
@@ -393,7 +407,7 @@ $("btnBack2").onclick=()=>showStep(2);
 $("btnSaveTrade").onclick=()=>{
   const ack=$("ackDrift"); if(ack&&!ack.checked) return alert("有红色风险提示时，请先勾选确认再保存");
   const calcTp=$("calcTp");
-  if(calcTp){ const v=calcTp.value?Number(calcTp.value):null; draft.tpPriceUser=v; draft.plan.tpPrice=v; draft.plan.tpNote=v!=null?"止盈：用户手动设定的目标价（笔记未给正股固定口径）":"笔记未给正股固定止盈口径：留空=不设固定止盈，以硬止损+时间止损离场"; }
+  if(calcTp){ const v=calcTp.value?Number(calcTp.value):null; draft.tpPriceUser=v; draft.plan.tpPrice=v; draft.plan.tpNote=v!=null?"止盈（股价）：用户手动设定的目标股价（笔记未给正股固定口径）":"笔记未给正股固定止盈口径：留空=不设固定止盈（股价），以硬止损+时间止损离场"; }
   const tr={id:uid(), createdAt:todayStr(), status:"open", ...draft, warnings:warningsFor(draft,draft.plan).map(w=>w.text)};
   delete tr.plan; tr.plan=draft.plan;
   DB.trades.push(tr); save(); draft=null; $("fTicker").value="";$("fQty").value="";$("fEntry").value="";$("fReason").value="";$("fNote").value="";$("fStrike").value="";$("fLongStrike").value="";$("fExpiry").value="";$("fDelta").value="";$("fTp").value=""; showStep(1); renderAll(); alert("已保存。记住你的止损价，触发时手动执行。");
@@ -406,24 +420,24 @@ function tradeCard(t){
   const q3days=t.q3?t.q3.maxWaitDays:5;
   const thumb=`
   <table class="kv">
-  <tr><td>止盈</td><td><b>${p.tpPrice!=null?fmt(p.tpPrice):"—（无固定止盈）"}</b>${p.tpPrice!=null&&t.kind.startsWith("stock")?' <span class="small">用户手动设定</span>':""}</td></tr>
-  <tr><td>止损</td><td><b>${p.slPrice!=null?fmt(p.slPrice):"—"}</b>${p.hardStop!=null?` <span class="small">· 接盘硬止损 ${fmt(p.hardStop)}</span>`:""}</td></tr>
+  <tr><td>${tpLabel(t.kind)}</td><td><b>${p.tpPrice!=null?fmt(p.tpPrice):"—（无固定止盈）"}</b>${p.tpPrice!=null&&t.kind.startsWith("stock")?' <span class="small">用户手动设定（股价）</span>':""}</td></tr>
+  <tr><td>${slLabel(t.kind)}</td><td><b>${p.slPrice!=null?fmt(p.slPrice):"—"}</b>${p.hardStop!=null?` <span class="small">· 接盘硬止损（标的股价） ${fmt(p.hardStop)}</span>`:""}</td></tr>
   <tr><td>止损时间</td><td><b>${q3days} 个交易日</b> <span class="small">站不回行权价或 5 日均线，${t.q3?esc(t.q3.plan):"第 5 天收盘前无条件平仓离场"}</span></td></tr>
-  <tr><td>三问</td><td>Q1 止损 ${t.q1?fmt(t.q1.stopPrice):"—"} / 预估亏 ${t.q1?fmt(t.q1.acceptLoss):"—"}${t.q1?(t.q1.canAccept?"（能接受）":"（不能接受）"):""}<br>Q2 ${t.q2?q2Label(t.q2.will):"—"}，砍价 ${t.q2?fmt(t.q2.cutPrice):"—"}<br>Q3 最多等 ${q3days} 天</td></tr>
+  <tr><td>三问</td><td>Q1 止损 ${t.q1?fmt(t.q1.stopPrice):"—"}（${q1StopLabel(t.kind).includes("权利金")?"权利金 / 张":"标的股价 / 股价"}） / 预估亏 ${t.q1?fmt(t.q1.acceptLoss):"—"}${t.q1?(t.q1.canAccept?"（能接受）":"（不能接受）"):""}<br>Q2 ${t.q2?q2Label(t.q2.will):"—"}，砍价 ${t.q2?fmt(t.q2.cutPrice):"—"}（标的股价）<br>Q3 最多等 ${q3days} 天</td></tr>
   ${t.status==="closed"?`<tr><td>平仓盈亏</td><td><span class="${pnlCls}">${fmt(t.pnl)}</span> <span class="small">${esc(t.closeDate||"")} · ${esc(t.closeMethod||"")}</span></td></tr>`:""}
   </table>`;
   const detail=`
   <div id="detail-${t.id}" class="detailbox hidden">
   <table class="kv">
-  <tr><td>交易</td><td>${esc(t.date)} · ${kindLabel(t.kind)} · 数量 ${t.qty} ${isOpt(t.kind)?"张":"股"} · 成交 ${fmt(t.entryPrice)}${isOpt(t.kind)?" /张":""}</td></tr>
-  <tr><td>标的</td><td>标的现价 ${fmt(t.underlyingPrice)}${t.strike?` · 行权 ${fmt(t.strike)}`:""}${t.longStrike?` · 买入腿 ${fmt(t.longStrike)}`:""}${t.expiry?` · 到期 ${esc(t.expiry)}（DTE ${t.dte??dteOf(t.expiry)}）`:""}${t.delta?` · Delta ${t.delta}`:""}</td></tr>
-  <tr><td>止盈口径</td><td>${esc(p.tpNote||"—")}</td></tr>
-  <tr><td>止损口径</td><td>${esc(p.slNote||"—")}</td></tr>
+  <tr><td>交易</td><td>${esc(t.date)} · ${kindLabel(t.kind)} · 数量 ${t.qty} ${isOpt(t.kind)?"张":"股"} · ${entryLabel(t.kind)} ${fmt(t.entryPrice)}</td></tr>
+  <tr><td>标的</td><td>标的股价现价 ${fmt(t.underlyingPrice)}${t.strike?` · 行权价（标的股价） ${fmt(t.strike)}`:""}${t.longStrike?` · 买入腿行权价（标的股价） ${fmt(t.longStrike)}`:""}${t.expiry?` · 到期 ${esc(t.expiry)}（DTE ${t.dte??dteOf(t.expiry)}）`:""}${t.delta?` · Delta ${t.delta}`:""}</td></tr>
+  <tr><td>${tpLabel(t.kind)}</td><td>${p.tpPrice!=null?fmt(p.tpPrice):"—（无固定止盈）"} · ${esc(p.tpNote||"—")}</td></tr>
+  <tr><td>${slLabel(t.kind)}</td><td>${p.slPrice!=null?fmt(p.slPrice):"—"} · ${esc(p.slNote||"—")}</td></tr>
   ${p.maxLoss!=null?`<tr><td>最大亏损</td><td>${fmt(p.maxLoss)}</td></tr>`:""}
   <tr><td>开仓理由</td><td>${esc(t.reason||"—")}</td></tr>
   ${t.note?`<tr><td>备注</td><td>${esc(t.note)}</td></tr>`:""}
   ${t.warnings&&t.warnings.length?`<tr><td>提示</td><td><span style="color:#8a5a00">⚠ ${esc(t.warnings.join("；"))}</span></td></tr>`:""}
-  ${t.status==="closed"?`<tr><td>平仓</td><td>${esc(t.closeDate||"")} · 平仓价 ${fmt(t.closePrice)}（${esc(t.closeMethod||"")}）· 盈亏 <span class="${pnlCls}">${fmt(t.pnl)}</span></td></tr>`:""}
+  ${t.status==="closed"?`<tr><td>平仓</td><td>${esc(t.closeDate||"")} · 平仓价（${t.closeMethod==="被行权"?"行权时标的股价":entryTypeShort(t.kind)}） ${fmt(t.closePrice)}（${esc(t.closeMethod||"")}）· 盈亏 <span class="${pnlCls}">${fmt(t.pnl)}</span></td></tr>`:""}
   </table>
   <div class="row"><button data-hide-detail="${t.id}">关闭详情</button></div>
   </div>`;
@@ -464,9 +478,11 @@ function openClose(id){
     ${isExp?`<option value="expire">到期归零 / 到期作废</option>`:""}
     ${tr.kind==="sell_put"||tr.kind==="bull_put_spread"?`<option value="assigned">被行权接盘（填行权时标的价格）</option>`:""}
   </select>
-  <label>平仓价 / 行权时标的价格（USD）</label><input id="cPrice" type="number" step="0.01" placeholder="到期归零可填 0">
+  <label id="lblClosePrice">平仓价（${isOpt(tr.kind)?"权利金 / 张":"股价"}，USD）</label><input id="cPrice" type="number" step="0.01" placeholder="到期归零可填 0">
   <p class="small" id="cPreview"></p>
-  <p class="small">盈亏公式：正股多头（平仓-开仓）×股数；卖方期权（卖出权利金-买回价）×100×张数；买方期权反之。被行权时按内在价值结算，系统不自动生成接盘正股仓位，如需记录请另开一笔正股买入。</p>`,"确认平仓");
+  <p class="small">盈亏公式：正股多头（平仓股价-开仓股价）×股数；卖方期权（卖出权利金-买回权利金）×100×张数；买方期权反之。被行权时填行权时标的股价，按内在价值结算，系统不自动生成接盘正股仓位，如需记录请另开一笔正股买入。</p>`,"确认平仓");
+  const updCloseLabel=()=>{ const m=$("cMethod").value; const lbl=$("lblClosePrice"); if(!lbl) return; lbl.textContent = m==="assigned" ? "行权时标的股价（USD）" : m==="expire" ? "平仓价（权利金 / 张，USD，到期归零填 0）" : "平仓价（"+entryTypeShort(tr.kind)+"，USD）"; };
+  updCloseLabel();
   const upd=()=>{
     const m=$("cMethod").value, cp=Number($("cPrice").value);
     if(m==="expire"){const r=pnlOf(tr,0,"expire"); $("cPreview").innerHTML=`预估盈亏：<b>${fmt(r.pnl)}</b>（${esc(r.note||"")}）`;}
@@ -474,7 +490,7 @@ function openClose(id){
     else if(!isNaN(cp)){const r=pnlOf(tr,cp,"close"); $("cPreview").innerHTML=`预估盈亏：<b>${fmt(r.pnl)}</b>`;}
     else $("cPreview").textContent="";
   };
-  $("cMethod").onchange=upd; $("cPrice").oninput=upd;
+  $("cMethod").onchange=()=>{updCloseLabel(); upd();}; $("cPrice").oninput=upd;
 }
 $("modalOk").onclick=()=>{
   if(modalMode!=="close"||!modalTradeId) return;
