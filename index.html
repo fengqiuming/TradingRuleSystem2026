@@ -34,7 +34,15 @@ details{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin
 .detailbox .kv td{border-bottom-color:#dbe4ee}
 .steps{display:flex;gap:6px;margin:10px 0} .step{flex:1;text-align:center;padding:8px;border-radius:8px;background:#e5e7eb;font-size:13px} .step.on{background:#111827;color:#fff}
 .hidden{display:none!important}
-.account{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:6px 0;cursor:pointer} .account.sel{border-color:#111827;background:#f9fafb;box-shadow:0 0 0 1px #111827}
+.acc-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.acc-btn{width:auto}
+.acc-btn.sel{background:#111827;color:#fff;border-color:#111827}
+details.card{margin-top:0}
+details.card>summary{list-style:none;cursor:pointer;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::before{content:"▾";color:var(--muted)}
+details.card:not([open])>summary::before{content:"▸"}
+.summary-title{font-size:18px;font-weight:700}
 footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 @media(max-width:640px){header h1{font-size:19px}.wrap{padding:10px}}
 </style>
@@ -46,9 +54,10 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 </div></header>
 <div class="wrap">
 
-<div class="card">
+<details class="card" id="accountCard" open>
+<summary><span class="summary-title">交易账户管理</span><span class="small">点击折叠 / 展开</span></summary>
 <div class="row" style="justify-content:space-between">
-<div><h2 style="margin:0">账户</h2><p class="muted" style="margin:4px 0 0">多账户分开管理。建账户时填账户净值，用于反推仓位（单笔极端止损不超过净值 2%~5%）。</p></div>
+<div><p class="muted" style="margin:4px 0 0">多账户分开管理。建账户时填账户净值，用于反推仓位（单笔极端止损不超过净值 2%~5%）。点账户名切换当前账户。</p></div>
 <div class="row">
 <button id="btnExport">导出 JSON 备份</button>
 <button id="btnImport">导入 JSON</button>
@@ -57,7 +66,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 <input type="file" id="fileImport" accept=".json,application/json" class="hidden">
 </div>
 </div>
-<div id="accountList"></div>
+<div id="accountList" class="acc-row"></div>
 <div class="grid">
 <div><label>新账户名称 *</label><input id="accName" placeholder="例如：主账户 / 美股期权账户"></div>
 <div><label>券商（可选）</label><input id="accBroker" placeholder="例如：IBKR / 富途"></div>
@@ -65,10 +74,10 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 <div><label>&nbsp;</label><button class="primary" id="btnAddAccount" style="width:100%">新建账户</button></div>
 </div>
 <p class="small">备份提醒：localStorage 只在本设备本浏览器有效，清浏览器数据、换设备都会丢。请定期点“导出 JSON 备份”，把文件存到安全位置。导入会覆盖当前全部数据，导入前请先导出。</p>
-</div>
+</details>
 
-<div class="card">
-<h2>新增交易 · 三步向导</h2>
+<details class="card" id="wizardCard" open>
+<summary><span class="summary-title">新增交易引导</span><span class="small">三步向导 · 点击折叠 / 展开</span></summary>
 <p class="muted">第 1 步填交易，第 2 步过三问清单（默认值按笔记自动算，可改），第 3 步核对系统算出的止盈 / 止损，确认后才入库。不提供展期：要展期请先平仓，再新开一笔。</p>
 <div class="steps"><div class="step on" id="stepTag1">1 · 交易信息</div><div class="step" id="stepTag2">2 · 灵魂三问</div><div class="step" id="stepTag3">3 · 止盈止损确认</div></div>
 
@@ -135,7 +144,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 <div class="row"><button id="btnBack2">← 上一步</button><button class="primary" id="btnSaveTrade">确认无误，保存这笔交易</button></div>
 <p class="small">保存后即按此执行。系统不接实时行情、不会自动帮你平仓——止损价是你的预先承诺，触发时请手动执行。</p>
 </div>
-</div>
+</details>
 
 <div class="card">
 <h2>交易记录</h2>
@@ -301,16 +310,12 @@ function pnlOf(tr,closePrice,closeMethod){
 /* ---- 账户 ---- */
 function renderAccounts(){
   const list=$("accountList"); const sel=selAcc();
-  $("curAccountName").textContent=sel?sel.name+"（净值 "+fmt(sel.nav)+"）":"—（请先新建账户）";
+  $("curAccountName").textContent=sel?sel.name+(sel.broker?" · "+sel.broker:"")+"（净值 "+fmt(sel.nav)+"）":"—（请先新建账户）";
   const fAcc=$("fAccount"); fAcc.innerHTML=DB.accounts.map(a=>`<option value="${a.id}" ${sel&&a.id===sel.id?"selected":""}>${esc(a.name)} — ${fmt(a.nav)}</option>`).join("")||`<option value="">（无账户）</option>`;
   if(!DB.accounts.length){list.innerHTML=`<p class="muted">还没有账户，先在下方新建一个。</p>`; return;}
-  list.innerHTML=DB.accounts.map(a=>{
-    const open=DB.trades.filter(t=>t.accountId===a.id&&t.status==="open").length;
-    const closed=DB.trades.filter(t=>t.accountId===a.id&&t.status==="closed");
-    const realised=closed.reduce((s,t)=>s+(Number(t.pnl)||0),0);
-    return `<div class="account ${sel&&a.id===sel.id?"sel":""}" data-acc="${a.id}"><b>${esc(a.name)}</b> <span class="muted">${esc(a.broker||"")}</span><br><span class="small">净值 ${fmt(a.nav)} · 持仓 ${open} 笔 · 已平仓 ${closed.length} 笔 · 已实现盈亏 <span class="${realised>=0?"pnl-pos":"pnl-neg"}">${fmt(realised)}</span></span></div>`;
-  }).join("");
-  list.querySelectorAll(".account").forEach(el=>el.onclick=()=>{DB.selectedAccountId=el.dataset.acc; save(); renderAll();});
+  /* 切换按钮只显示账户名称，行内排列；券商/净值移到“交易记录 · 当前账户”行，悬停标题也可看到 */
+  list.innerHTML=DB.accounts.map(a=>`<button class="acc-btn ${sel&&a.id===sel.id?"sel":""}" data-acc="${a.id}" title="${esc(a.broker?a.broker+" · 净值 "+fmt(a.nav):"净值 "+fmt(a.nav))}">${esc(a.name)}</button>`).join("");
+  list.querySelectorAll(".acc-btn").forEach(el=>el.onclick=()=>{DB.selectedAccountId=el.dataset.acc; save(); renderAll();});
 }
 $("btnAddAccount").onclick=()=>{
   const name=$("accName").value.trim(), nav=Number($("accNav").value);
@@ -525,6 +530,11 @@ $("btnDemo").onclick=()=>{
 $("btnClear").onclick=()=>{if(confirm("确定清空全部账户和交易记录吗？此操作不可恢复，请先导出备份。")){DB={accounts:[],trades:[],selectedAccountId:null}; save(); renderAll();}};
 
 function renderAll(){renderAccounts(); renderTrades(); syncKindUI();}
+/* 折叠状态记忆：刷新后仍保持用户上次的展开/折叠（与交易数据分开存，不影响备份） */
+const UIKEY="tradingRuleSystem2026_v1_ui";
+function restoreCollapse(){try{const ui=JSON.parse(localStorage.getItem(UIKEY)||"{}"); if(ui.accountOpen===false) $("accountCard").removeAttribute("open"); if(ui.wizardOpen===false) $("wizardCard").removeAttribute("open");}catch(e){}}
+function bindCollapse(id,key){const el=$(id); if(!el) return; el.addEventListener("toggle",()=>{try{const ui=JSON.parse(localStorage.getItem(UIKEY)||"{}"); ui[key]=el.open; localStorage.setItem(UIKEY,JSON.stringify(ui));}catch(e){}});}
+restoreCollapse(); bindCollapse("accountCard","accountOpen"); bindCollapse("wizardCard","wizardOpen");
 $("fDate").value=todayStr();
 renderAll();
 </script>
