@@ -16,7 +16,9 @@ button{cursor:pointer;border:1px solid #d1d5db;background:#fff;border-radius:8px
 button.primary{background:#111827;color:#fff;border-color:#111827} button.danger{color:var(--red);border-color:#fecaca} button:disabled{opacity:.5;cursor:not-allowed}
 input,select,textarea{width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff}
 label{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;align-items:end}
+.grid>div{display:flex;flex-direction:column;justify-content:flex-end}
+.grid label{min-height:40px;display:flex;align-items:flex-end;flex-wrap:wrap;align-content:flex-end}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700}
 .badge.red{background:#fee2e2;color:#991b1b}.badge.green{background:#d1fae5;color:#065f46}.badge.amber{background:#fef3c7;color:#92400e}.badge.grey{background:#e5e7eb;color:#374151}.badge.blue{background:#dbeafe;color:#1e40af}
@@ -100,10 +102,10 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 </select></div>
 <div><label>开仓日期 *</label><input id="fDate" type="date"></div>
 <div><label>数量 *</label><input id="fQty" type="number" min="0" step="1" placeholder="正股=股数，期权=张数"></div>
-<div id="wrapUnderlying"><label id="lblUnderlying">标的股价现价（USD）* <span class="small">期权必填，用于算行权/仓位</span></label><input id="fUnderlying" type="number" min="0" step="0.01" placeholder="例如：68.50"></div>
+<div id="wrapUnderlying"><label id="lblUnderlying">标的股价现价（USD）&nbsp;* <span class="small">期权必填，用于算仓位</span></label><input id="fUnderlying" type="number" min="0" step="0.01" placeholder="例如：68.50"></div>
 <div id="wrapEntry"><label id="lblEntry">成交价（股价，USD）*</label><input id="fEntry" type="number" min="0" step="0.01" placeholder="正股=股价；期权=权利金/张"></div>
-<div id="wrapStrike" class="hidden"><label>行权价 Strike（标的股价，USD）*</label><input id="fStrike" type="number" min="0" step="0.01"></div>
-<div id="wrapLongStrike" class="hidden"><label>买入腿行权价（标的股价，USD）* <span class="small">价差必填，低于卖出腿</span></label><input id="fLongStrike" type="number" min="0" step="0.01"></div>
+<div id="wrapStrike" class="hidden"><label>行权价 Strike（标的股价，USD）&nbsp;*</label><input id="fStrike" type="number" min="0" step="0.01"></div>
+<div id="wrapLongStrike" class="hidden"><label>买入腿行权价（标的股价，USD）&nbsp;* <span class="small">价差必填，低于卖出腿</span></label><input id="fLongStrike" type="number" min="0" step="0.01"></div>
 <div id="wrapExpiry" class="hidden"><label>行权日 / 到期日 *</label><input id="fExpiry" type="date"></div>
 <div id="wrapDelta" class="hidden"><label>Delta（可选，绝对值）</label><input id="fDelta" type="number" min="0" max="1" step="0.01" placeholder="例如：0.15"></div>
 <div id="wrapTp" class="hidden"><label>止盈目标价（股价，USD，可选）<span class="small">正股专用，笔记无固定口径，由你自己定</span></label><input id="fTp" type="number" min="0" step="0.01" placeholder="例如：60.00，留空=不设固定止盈"></div>
@@ -334,9 +336,9 @@ function syncKindUI(){
   $("wrapTp").classList.toggle("hidden",opt);
   $("wrapUnderlying").classList.toggle("hidden",false);
   /* 价格类型随交易类型动态切换：正股=股价，期权=权利金/张；标的现价永远是股价 */
-  const lblEntry=$("lblEntry"); if(lblEntry) lblEntry.textContent=entryLabel(k)+" *";
+  const lblEntry=$("lblEntry"); if(lblEntry) lblEntry.textContent=entryLabel(k)+" *";
   const fEntry=$("fEntry"); if(fEntry) fEntry.placeholder=opt?"例如：0.85（权利金 / 张）":"例如：50.87（股价）";
-  const lblU=$("lblUnderlying"); if(lblU) lblU.innerHTML='标的股价现价（USD）* <span class="small">期权必填，用于算行权/仓位；正股可填当前股价</span>';
+  const lblU=$("lblUnderlying"); if(lblU) lblU.innerHTML='标的股价现价（USD）&nbsp;* <span class="small">期权必填，用于算仓位</span>';
   const t=$("fTicker").value.trim().toUpperCase();
   if(LEV.includes(t)) $("fAsset").value="leveraged";
 }
