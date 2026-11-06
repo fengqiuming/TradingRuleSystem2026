@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人交易记录与纪律约束系统 V1</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1a1d21;--muted:#6b7280;--line:#e5e7eb;--red:#c0392b;--green:#0f6e56;--amber:#8a5a00;--blue:#1d4ed8;--soft-red:#fef2f2;--soft-green:#ecfdf5;--soft-amber:#fffbeb}
+*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.55}
+header{background:#111827;color:#fff;padding:22px 18px} header h1{margin:0;font-size:22px} header p{margin:6px 0 0;color:#d1d5db;font-size:14px}
+.wrap{max-width:1080px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+h2{font-size:18px;margin:0 0 10px} h3{font-size:15px;margin:14px 0 8px}
+.muted{color:var(--muted);font-size:13px} .small{font-size:12px;color:var(--muted)}
+button{cursor:pointer;border:1px solid #d1d5db;background:#fff;border-radius:8px;padding:8px 12px;font-size:14px}
+button.primary{background:#111827;color:#fff;border-color:#111827} button.danger{color:var(--red);border-color:#fecaca} button:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff}
+label{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700}
+.badge.red{background:#fee2e2;color:#991b1b}.badge.green{background:#d1fae5;color:#065f46}.badge.amber{background:#fef3c7;color:#92400e}.badge.grey{background:#e5e7eb;color:#374151}.badge.blue{background:#dbeafe;color:#1e40af}
+.warn{background:var(--soft-amber);border:1px solid #fde68a;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:13px}
+.dangerbox{background:var(--soft-red);border:1px solid #fecaca;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:13px}
+.okbox{background:var(--soft-green);border:1px solid #a7f3d0;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px} th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top} th{color:var(--muted);font-size:12px}
+details{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px} summary{cursor:pointer;font-weight:700}
+.trade{border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0}
+.trade .meta{font-size:13px;color:#374151} .pnl-pos{color:var(--green);font-weight:700} .pnl-neg{color:var(--red);font-weight:700}
+.steps{display:flex;gap:6px;margin:10px 0} .step{flex:1;text-align:center;padding:8px;border-radius:8px;background:#e5e7eb;font-size:13px} .step.on{background:#111827;color:#fff}
+.hidden{display:none!important}
+.account{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:6px 0;cursor:pointer} .account.sel{border-color:#111827;background:#f9fafb;box-shadow:0 0 0 1px #111827}
+footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
+@media(max-width:640px){header h1{font-size:19px}.wrap{padding:10px}}
+</style>
+</head>
+<body>
+<header><div class="wrap" style="padding:0">
+<h1>个人交易记录与纪律约束系统 V1</h1>
+<p>先问三问，再下单；逻辑证伪即离场，绝不把被动接盘合理化为长期投资。数据只存在本浏览器 localStorage，不上传服务器，无登录。</p>
+</div></header>
+<div class="wrap">
+
+<div class="card">
+<div class="row" style="justify-content:space-between">
+<div><h2 style="margin:0">账户</h2><p class="muted" style="margin:4px 0 0">多账户分开管理。建账户时填账户净值，用于反推仓位（单笔极端止损不超过净值 2%~5%）。</p></div>
+<div class="row">
+<button id="btnExport">导出 JSON 备份</button>
+<button id="btnImport">导入 JSON</button>
+<button id="btnDemo">载入 1 笔示例</button>
+<button id="btnClear" class="danger">清空全部数据</button>
+<input type="file" id="fileImport" accept=".json,application/json" class="hidden">
+</div>
+</div>
+<div id="accountList"></div>
+<div class="grid">
+<div><label>新账户名称 *</label><input id="accName" placeholder="例如：主账户 / 美股期权账户"></div>
+<div><label>券商（可选）</label><input id="accBroker" placeholder="例如：IBKR / 富途"></div>
+<div><label>账户净值（USD）*</label><input id="accNav" type="number" min="0" step="0.01" placeholder="例如：100000"></div>
+<div><label>&nbsp;</label><button class="primary" id="btnAddAccount" style="width:100%">新建账户</button></div>
+</div>
+<p class="small">备份提醒：localStorage 只在本设备本浏览器有效，清浏览器数据、换设备都会丢。请定期点“导出 JSON 备份”，把文件存到安全位置。导入会覆盖当前全部数据，导入前请先导出。</p>
+</div>
+
+<div class="card">
+<h2>新增交易 · 三步向导</h2>
+<p class="muted">第 1 步填交易，第 2 步过三问清单（默认值按笔记自动算，可改），第 3 步核对系统算出的止盈 / 止损，确认后才入库。不提供展期：要展期请先平仓，再新开一笔。</p>
+<div class="steps"><div class="step on" id="stepTag1">1 · 交易信息</div><div class="step" id="stepTag2">2 · 灵魂三问</div><div class="step" id="stepTag3">3 · 止盈止损确认</div></div>
+
+<div id="step1">
+<div class="grid">
+<div><label>账户 *</label><select id="fAccount"></select></div>
+<div><label>交易类型 *</label><select id="fKind">
+<option value="stock_long">正股 · 买入做多</option>
+<option value="stock_short">正股 · 卖出做空</option>
+<option value="sell_put">期权 · 卖出 Put（收权利金）</option>
+<option value="bull_put_spread">期权 · 牛市看跌价差 Bull Put Spread</option>
+<option value="sell_call">期权 · 卖出 Call（收权利金）</option>
+<option value="buy_call">期权 · 买入 Call</option>
+<option value="buy_put">期权 · 买入 Put</option>
+</select></div>
+<div><label>代码 *</label><input id="fTicker" placeholder="例如：TQQQ / KORU / AAPL" style="text-transform:uppercase"></div>
+<div><label>标的分类 *</label><select id="fAsset">
+<option value="leveraged">3 倍杠杆 ETF（TQQQ / SOXL / KORU 等）</option>
+<option value="quality">优质正股 / 宽基指数</option>
+</select></div>
+<div><label>开仓日期 *</label><input id="fDate" type="date"></div>
+<div><label>数量 *</label><input id="fQty" type="number" min="0" step="1" placeholder="正股=股数，期权=张数"></div>
+<div id="wrapUnderlying"><label>标的现价（USD）* <span class="small">期权必填，用于算行权/仓位</span></label><input id="fUnderlying" type="number" min="0" step="0.01" placeholder="例如：68.50"></div>
+<div id="wrapEntry"><label>成交价（USD）*</label><input id="fEntry" type="number" min="0" step="0.01" placeholder="正股=股价；期权=权利金/张"></div>
+<div id="wrapStrike" class="hidden"><label>行权价 Strike（USD）*</label><input id="fStrike" type="number" min="0" step="0.01"></div>
+<div id="wrapLongStrike" class="hidden"><label>买入腿行权价（USD）* <span class="small">价差必填，低于卖出腿</span></label><input id="fLongStrike" type="number" min="0" step="0.01"></div>
+<div id="wrapExpiry" class="hidden"><label>行权日 / 到期日 *</label><input id="fExpiry" type="date"></div>
+<div id="wrapDelta" class="hidden"><label>Delta（可选，绝对值）</label><input id="fDelta" type="number" min="0" max="1" step="0.01" placeholder="例如：0.15"></div>
+</div>
+<label>开仓理由（必填一句话，写清你当时为什么看不跌/为什么收租）</label>
+<input id="fReason" placeholder="例如：QQQ 站上 MA200×1.04，趋势向上，卖 30 天虚值 Put 收租">
+<label>备注（可选）</label><input id="fNote" placeholder="财报/宏观事件、支撑位等">
+<div id="sizingBox"></div>
+<div class="row" style="margin-top:12px"><button class="primary" id="btnToStep2">下一步：灵魂三问 →</button></div>
+</div>
+
+<div id="step2" class="hidden">
+<h3>灵魂三问 · 必须逐项回答，默认值可改</h3>
+<div class="card" style="background:#f9fafb">
+<label>Q1 · 极端压力测试：如果明天标的因黑天鹅跳空低开 15%，我的止损价是多少？这笔亏损我能否面不改色接受？</label>
+<div class="grid"><div><label>止损价（USD）</label><input id="q1Stop" type="number" step="0.01"></div>
+<div><label>该情景预估亏损（USD）</label><input id="q1Loss" type="number" step="0.01"></div>
+<div><label>能否接受？</label><select id="q1Accept"><option value="yes">能接受</option><option value="no">不能接受——应减仓/放弃</option></select></div></div>
+</div>
+<div class="card" style="background:#f9fafb">
+<label>Q2 · 接盘意愿测试：我是真愿意在这个行权价长期持有这只正股，还是只贪高权利金？</label>
+<div class="grid"><div><label>真实意愿</label><select id="q2Will"><option value="premium">只贪权利金，不想长期持有</option><option value="hold">真愿意在行权价长期持有</option></select></div>
+<div><label>跌破什么价格必须立刻砍掉期权？（USD）</label><input id="q2Cut" type="number" step="0.01"></div></div>
+<p class="small" id="q2Hint"></p>
+</div>
+<div class="card" style="background:#f9fafb">
+<label>Q3 · 时间底线测试：如果不幸被动接盘，我允许自己等反弹的最长时限是几天？到期不涨怎么办？</label>
+<div class="grid"><div><label>最长等待（交易日，默认 5，笔记范围 3~5）</label><input id="q3Days" type="number" min="1" max="10" step="1" value="5"></div>
+<div><label>到期不涨怎么办</label><input id="q3Plan" value="第 5 天收盘前无条件平仓离场"></div></div>
+</div>
+<div class="row"><button id="btnBack1">← 上一步</button><button class="primary" id="btnToStep3">下一步：核对止盈止损 →</button></div>
+</div>
+
+<div id="step3" class="hidden">
+<h3>系统按机械化体系算出的止盈 / 止损</h3>
+<div id="calcBox"></div>
+<div class="row"><button id="btnBack2">← 上一步</button><button class="primary" id="btnSaveTrade">确认无误，保存这笔交易</button></div>
+<p class="small">保存后即按此执行。系统不接实时行情、不会自动帮你平仓——止损价是你的预先承诺，触发时请手动执行。</p>
+</div>
+</div>
+
+<div class="card">
+<h2>交易记录</h2>
+<p class="muted">当前账户：<b id="curAccountName">—</b> · 持仓中按开仓日期倒序；已平仓在下方折叠区。</p>
+<div id="statsBox"></div>
+<div id="openList"></div>
+<details id="closedWrap"><summary>已平仓记录（点击展开 / 折叠）</summary><div id="closedList" style="margin-top:10px"></div></details>
+</div>
+
+<div class="card">
+<h2>铁律速查（来自你的笔记）</h2>
+<details><summary>展开查看完整铁律与默认参数</summary>
+<ul style="font-size:14px">
+<li><b>杠杆 ETF：</b>每日重置 + 波动率损耗，震荡下行净值指数级坍塌，只能趋势交易或纯收租，严禁被动接盘死扛。</li>
+<li><b>策略漂移：</b>卖 Put 跌穿行权价，头寸就从“收租”变成“满 Delta 重仓多头”。逻辑证伪即离场。</li>
+<li><b>锚定 / 处置效应：</b>市场不在乎你的成本价；浮亏就是实亏，小伤时截断，别等交易瘫痪。</li>
+<li><b>仓位：</b>单笔极端止损 ≤ 账户净值 2%~5%；先算跌 20%~30% 亏多少，再反推张数。</li>
+<li><b>结构：</b>杠杆 ETF 必用价差（Bull Put Spread）锁死最大亏损；裸卖 Put 尽量 Delta &lt; 0.15~0.20、30~45 DTE，避开财报与重磅宏观日。</li>
+<li><b>期权止盈：</b>赚到权利金 50%~70% 提前平仓；<b>止损：</b>期权涨到卖出价 2~3 倍，或正股放量跌破行权价 / 20/50 日均线，直接认赔。</li>
+<li><b>接盘后 Day 1：</b>杠杆 ETF 成本下 8%~10% 硬止损（对应底层约 3%），普通正股 10%~15%；3~5 天站不回行权价或 5 日均线，第 5 天收盘前走；跌破支撑先砍 50%，剩余做 Collar，绝不裸持死扛。</li>
+<li><b>正股止盈：</b>笔记未给固定口径，本系统默认不设机械止盈价（可手动填），以硬止损 + 时间止损离场；买入期权为 V1 约定口径（止盈 2 倍权利金、止损权利金亏 50%），可在第 3 步修改。</li>
+</ul>
+</details>
+<p class="small">免责：本系统是个人记录与纪律工具，按固定规则机械计算，不是投资建议。3 倍杠杆 ETF 有显著波动损耗与路径依赖风险。</p>
+</div>
+</div>
+
+<div id="modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-start;justify-content:center;padding:20px;z-index:50">
+<div class="card" style="max-width:560px;width:100%;max-height:90vh;overflow:auto">
+<h2 id="modalTitle">平仓</h2><div id="modalBody"></div>
+<div class="row" style="margin-top:12px"><button id="modalCancel">取消</button><button class="primary" id="modalOk">确认</button></div>
+</div></div>
+
+<footer>TradingRuleSystem2026 · V1 · localStorage · GitHub Pages</footer>
+<script>
+"use strict";
+const KEY="tradingRuleSystem2026_v1";
+const LEV=["TQQQ","SOXL","KORU","UPRO","SPXL","TECL","TNA","LABU","FAS","SPXU","SQQQ"];
+const $=id=>document.getElementById(id);
+const fmt=n=>(n==null||n===""||isNaN(Number(n)))?"—":"$"+Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtPct=n=>(n==null||isNaN(Number(n)))?"—":(Number(n)*100).toFixed(1)+"%";
+const uid=()=> "id_"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const todayStr=()=>new Date().toISOString().slice(0,10);
+const dteOf=exp=>{if(!exp) return null; return Math.round((new Date(exp+"T00:00:00")-new Date(todayStr()+"T00:00:00"))/86400000);};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY)); if(d&&Array.isArray(d.accounts)&&Array.isArray(d.trades)) return d;}catch(e){} return {accounts:[],trades:[],selectedAccountId:null};}
+let DB=load();
+function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
+function selAcc(){return DB.accounts.find(a=>a.id===DB.selectedAccountId)||DB.accounts[0]||null;}
+function isOpt(k){return ["sell_put","bull_put_spread","sell_call","buy_call","buy_put"].includes(k);}
+function isSellOpt(k){return ["sell_put","bull_put_spread","sell_call"].includes(k);}
+function kindLabel(k){return {"stock_long":"正股买入","stock_short":"正股做空","sell_put":"卖出 Put","bull_put_spread":"牛市看跌价差","sell_call":"卖出 Call","buy_call":"买入 Call","buy_put":"买入 Put"}[k]||k;}
+function assetLabel(a){return a==="leveraged"?"3倍杠杆ETF":"优质正股/宽基";}
+
+/* ---- 机械化计算：全部按笔记口径，买入期权为 V1 约定并在界面注明 ---- */
+function calcPlan(t){
+  const entry=Number(t.entryPrice), u=Number(t.underlyingPrice)||entry, strike=Number(t.strike)||null, qty=Number(t.qty)||0;
+  const lev=t.assetClass==="leveraged";
+  const p={tpPrice:null,slPrice:null,tpNote:"",slNote:"",hardStop:null,timeStopDays:5,maxLoss:null,scenarioLoss:null};
+  if(t.kind==="stock_long"){
+    p.slPrice=+(entry*(lev?0.91:0.875)).toFixed(2); p.hardStop=p.slPrice;
+    p.slNote="硬止损：成本价下 "+(lev?"9%（杠杆ETF，8%~10%中值）":"12.5%（普通正股，10%~15%中值）");
+    p.tpNote="笔记未给正股固定止盈口径：默认不设机械止盈，以硬止损+时间止损离场（可手动填目标价）";
+    p.scenarioLoss=+(entry*qty*0.25).toFixed(2);
+  } else if(t.kind==="stock_short"){
+    p.slPrice=+(entry*(lev?1.09:1.125)).toFixed(2); p.hardStop=p.slPrice;
+    p.slNote="硬止损：成本价上 "+(lev?"9%":"12.5%");
+    p.tpNote="笔记未给正股固定止盈口径：默认不设机械止盈（可手动填）";
+    p.scenarioLoss=+(entry*qty*0.25).toFixed(2);
+  } else if(isSellOpt(t.kind)){
+    const tp=+(entry*0.4).toFixed(2), sl=+(entry*2.5).toFixed(2);
+    p.tpPrice=tp; p.slPrice=sl;
+    p.tpNote="止盈：买回价 = 卖出权利金 × 0.40（赚 60%，在 50%~70% 区间内）";
+    p.slNote="止损：买回价 = 卖出权利金 × 2.5（在 2~3 倍区间内）；或标的跌破行权价 "+(strike?fmt(strike):"—")+" 时直接认赔";
+    p.hardStop=strike? (t.kind==="sell_call"? +(strike*1.10).toFixed(2) : +(strike*(lev?0.91:0.875)).toFixed(2)) : null;
+    if(t.kind==="bull_put_spread"&&strike&&t.longStrike){
+      p.maxLoss=+(((strike-Number(t.longStrike))*100*qty)-(entry*100*qty)).toFixed(2);
+      p.scenarioLoss=Math.min(p.maxLoss, Math.max(0,+( (strike-u*0.75)*100*qty - entry*100*qty).toFixed(2)));
+    } else if(t.kind==="sell_put"){
+      p.maxLoss=+((strike*100*qty)-(entry*100*qty)).toFixed(2);
+      p.scenarioLoss=Math.max(0,+((strike-u*0.75)*100*qty - entry*100*qty).toFixed(2));
+    } else { p.scenarioLoss=Math.max(0,+(((u*1.25)-strike)*100*qty - entry*100*qty).toFixed(2)); }
+  } else { /* buy_call / buy_put : V1 约定 */
+    p.tpPrice=+(entry*2).toFixed(2); p.slPrice=+(entry*0.5).toFixed(2);
+    p.tpNote="V1 约定（笔记以卖方为主）：卖出价 = 买入权利金 × 2（赚 100%）";
+    p.slNote="V1 约定：卖出价 = 买入权利金 × 0.5（亏 50% 止损）";
+    p.maxLoss=+(entry*100*qty).toFixed(2); p.scenarioLoss=p.maxLoss;
+  }
+  return p;
+}
+function sizing(t,plan){
+  const acc=DB.accounts.find(a=>a.id===t.accountId); if(!acc||!acc.nav) return null;
+  const nav=Number(acc.nav), riskPct=0.03, limit=+(nav*riskPct).toFixed(2);
+  const loss=plan.scenarioLoss==null?null:plan.scenarioLoss;
+  return {nav, riskPct, limit, loss, ratio: loss==null?null:+(loss/limit).toFixed(2), ok: loss!=null && loss<=limit};
+}
+function warningsFor(t,plan){
+  const w=[];
+  if(t.assetClass==="leveraged"&&t.kind==="sell_put") w.push({level:"danger",text:"策略漂移高危：杠杆 ETF 裸卖 Put。笔记要求杠杆 ETF 必用价差锁死最大亏损。建议改成牛市看跌价差；如坚持裸卖，请在第 3 步勾选“我已知晓并承担此漂移风险”。"});
+  if(t.assetClass==="leveraged"&&(t.kind==="stock_long")) w.push({level:"warn",text:"杠杆 ETF 不具备长期持有待均值回归的逻辑：只能趋势交易，硬止损 8%~10% 必须执行，跌破即走。"});
+  if(isOpt(t.kind)&&t.delta&&Number(t.delta)>0.20) w.push({level:"warn",text:"Delta "+t.delta+" 超过笔记建议的 0.15~0.20，偏实值，Gamma 与接盘风险更高。"});
+  if(isOpt(t.kind)&&t.expiry){const d=dteOf(t.expiry); if(d!=null&&(d<30||d>45)) w.push({level:"warn",text:"DTE 为 "+d+" 天，笔记建议 30~45 天。" });}
+  const s=sizing(t,plan); if(s&&s.loss!=null&&!s.ok) w.push({level:"danger",text:"仓位超限：按标的跌 25% 情景预估亏损 "+fmt(s.loss)+"，超过账户净值 3% 上限 "+fmt(s.limit)+"（约 "+(s.ratio*100).toFixed(0)+"% 的上限）。请减张数/股数，或放弃。"});
+  if(s&&s.loss!=null&&s.ok) w.push({level:"ok",text:"仓位检查通过：跌 25% 情景预估亏损 "+fmt(s.loss)+"，占 3% 风险上限 "+fmt(s.limit)+" 的 "+Math.round(s.ratio*100)+"%"});
+  return w;
+}
+function pnlOf(tr,closePrice,closeMethod){
+  const q=Number(tr.qty), e=Number(tr.entryPrice);
+  if(closeMethod==="expire"){
+    if(isSellOpt(tr.kind)) return {pnl:+(e*100*q), note:"到期归零，权利金全收"};
+    if(tr.kind==="buy_call"||tr.kind==="buy_put") return {pnl:+(-e*100*q), note:"到期归零，权利金全损"};
+    return {pnl:0,note:""};
+  }
+  if(tr.kind==="stock_long") return {pnl:+((closePrice-e)*q)};
+  if(tr.kind==="stock_short") return {pnl:+((e-closePrice)*q)};
+  if(isSellOpt(tr.kind)) return {pnl:+((e-closePrice)*100*q)};
+  return {pnl:+((closePrice-e)*100*q)}; /* buy option */
+}
+
+/* ---- 账户 ---- */
+function renderAccounts(){
+  const list=$("accountList"); const sel=selAcc();
+  $("curAccountName").textContent=sel?sel.name+"（净值 "+fmt(sel.nav)+"）":"—（请先新建账户）";
+  const fAcc=$("fAccount"); fAcc.innerHTML=DB.accounts.map(a=>`<option value="${a.id}" ${sel&&a.id===sel.id?"selected":""}>${esc(a.name)} — ${fmt(a.nav)}</option>`).join("")||`<option value="">（无账户）</option>`;
+  if(!DB.accounts.length){list.innerHTML=`<p class="muted">还没有账户，先在下方新建一个。</p>`; return;}
+  list.innerHTML=DB.accounts.map(a=>{
+    const open=DB.trades.filter(t=>t.accountId===a.id&&t.status==="open").length;
+    const closed=DB.trades.filter(t=>t.accountId===a.id&&t.status==="closed");
+    const realised=closed.reduce((s,t)=>s+(Number(t.pnl)||0),0);
+    return `<div class="account ${sel&&a.id===sel.id?"sel":""}" data-acc="${a.id}"><b>${esc(a.name)}</b> <span class="muted">${esc(a.broker||"")}</span><br><span class="small">净值 ${fmt(a.nav)} · 持仓 ${open} 笔 · 已平仓 ${closed.length} 笔 · 已实现盈亏 <span class="${realised>=0?"pnl-pos":"pnl-neg"}">${fmt(realised)}</span></span></div>`;
+  }).join("");
+  list.querySelectorAll(".account").forEach(el=>el.onclick=()=>{DB.selectedAccountId=el.dataset.acc; save(); renderAll();});
+}
+$("btnAddAccount").onclick=()=>{
+  const name=$("accName").value.trim(), nav=Number($("accNav").value);
+  if(!name) return alert("请填账户名称"); if(!nav||nav<=0) return alert("请填大于 0 的账户净值（用于仓位反推）");
+  const a={id:uid(),name,broker:$("accBroker").value.trim(),nav,createdAt:todayStr()};
+  DB.accounts.push(a); DB.selectedAccountId=a.id; save(); $("accName").value="";$("accBroker").value="";$("accNav").value=""; renderAll();
+};
+
+/* ---- 向导 ---- */
+let draft=null;
+function showStep(n){[1,2,3].forEach(i=>{$("step"+i).classList.toggle("hidden",i!==n); $("stepTag"+i).classList.toggle("on",i===n);});}
+function syncKindUI(){
+  const k=$("fKind").value, opt=isOpt(k);
+  $("wrapStrike").classList.toggle("hidden",!opt); $("wrapExpiry").classList.toggle("hidden",!opt); $("wrapDelta").classList.toggle("hidden",!opt);
+  $("wrapLongStrike").classList.toggle("hidden",k!=="bull_put_spread");
+  $("wrapUnderlying").classList.toggle("hidden",false);
+  const t=$("fTicker").value.trim().toUpperCase();
+  if(LEV.includes(t)) $("fAsset").value="leveraged";
+}
+$("fKind").onchange=syncKindUI; $("fTicker").onchange=syncKindUI; $("fTicker").oninput=()=>{const t=$("fTicker").value.trim().toUpperCase(); if(LEV.includes(t)) $("fAsset").value="leveraged";};
+function readStep1(){
+  const k=$("fKind").value;
+  const t={accountId:$("fAccount").value, kind:k, ticker:$("fTicker").value.trim().toUpperCase(), assetClass:$("fAsset").value,
+    date:$("fDate").value||todayStr(), qty:Number($("fQty").value), underlyingPrice:Number($("fUnderlying").value)||null,
+    entryPrice:Number($("fEntry").value), strike:$("fStrike").value?Number($("fStrike").value):null,
+    longStrike:$("fLongStrike").value?Number($("fLongStrike").value):null, expiry:$("fExpiry").value||null,
+    delta:$("fDelta").value?Number($("fDelta").value):null, reason:$("fReason").value.trim(), note:$("fNote").value.trim()};
+  t.dte=t.expiry?dteOf(t.expiry):null; return t;
+}
+function validateStep1(t){
+  if(!t.accountId) return "请先新建并选择一个账户";
+  if(!t.ticker) return "请填代码"; if(!t.qty||t.qty<=0) return "请填大于 0 的数量";
+  if(t.entryPrice==null||isNaN(t.entryPrice)||t.entryPrice<0) return "请填成交价";
+  if(!t.reason) return "请填一句话开仓理由（防策略漂移）";
+  if(isOpt(t.kind)){ if(!t.strike) return "期权请填行权价"; if(!t.expiry) return "期权请填行权日"; if(!t.underlyingPrice) return "期权请填标的现价"; if(t.kind==="bull_put_spread"&&(!t.longStrike||t.longStrike>=t.strike)) return "价差请填低于卖出腿的买入腿行权价"; }
+  else { if(!t.underlyingPrice) t.underlyingPrice=t.entryPrice; }
+  return null;
+}
+$("btnToStep2").onclick=()=>{
+  const t=readStep1(); const err=validateStep1(t); if(err) return alert(err);
+  draft=t; const plan=calcPlan(t); draft.plan=plan;
+  const s=sizing(t,plan);
+  $("sizingBox").innerHTML = s? `<div class="${s.ok?"okbox":"dangerbox"}">仓位试算（跌 25% 情景）：预估亏损 <b>${fmt(s.loss)}</b>，3% 风险上限 <b>${fmt(s.limit)}</b>（净值 ${fmt(s.nav)} × 3%）。${s.ok?"在上限内。":"已超上限，请减仓。"}</div>` : "";
+  const warns=warningsFor(t,plan);
+  if(warns.length) $("sizingBox").innerHTML += warns.map(w=>`<div class="${w.level==="danger"?"dangerbox":w.level==="warn"?"warn":"okbox"}">${esc(w.text)}</div>`).join("");
+  /* Q1/Q2/Q3 默认值 */
+  const q1Stop = t.kind==="stock_long"? plan.slPrice : t.kind==="stock_short"? plan.slPrice : (t.strike||t.underlyingPrice);
+  const q1Loss = t.kind.startsWith("stock")? +(Number(t.entryPrice)*Number(t.qty)*0.15).toFixed(2) : (plan.scenarioLoss!=null? +(plan.scenarioLoss*0.6).toFixed(2): null);
+  $("q1Stop").value=q1Stop??""; $("q1Loss").value=q1Loss??"";
+  $("q2Cut").value=t.strike||plan.slPrice||"";
+  $("q2Hint").textContent = isOpt(t.kind)? "只贪权利金时，跌破行权价即逻辑证伪，应砍期权；真愿意持有时，砍价改为接盘硬止损价。" : "正股：跌破硬止损价即离场。";
+  $("q3Days").value=5; $("q3Plan").value="第 5 天收盘前无条件平仓离场";
+  showStep(2);
+};
+$("btnBack1").onclick=()=>showStep(1);
+$("btnToStep3").onclick=()=>{
+  if(!$("q1Stop").value) return alert("Q1 请填止损价");
+  if($("q1Accept").value==="no") { if(!confirm("Q1 你选了“不能接受这笔亏损”。按铁律应减仓或放弃，仍要继续保存这笔交易吗？")) return; }
+  draft.q1={stopPrice:Number($("q1Stop").value), acceptLoss:Number($("q1Loss").value)||null, canAccept:$("q1Accept").value==="yes"};
+  draft.q2={will:$("q2Will").value, cutPrice:Number($("q2Cut").value)||null};
+  draft.q3={maxWaitDays:Number($("q3Days").value)||5, plan:$("q3Plan").value.trim()};
+  const plan=draft.plan, t=draft;
+  const warns=warningsFor(t,plan);
+  $("calcBox").innerHTML=`
+  <table><tr><th>项目</th><th>数值</th><th>口径</th></tr>
+  <tr><td>止盈</td><td><b>${plan.tpPrice!=null?fmt(plan.tpPrice):"—（无固定止盈）"}</b></td><td>${esc(plan.tpNote)}</td></tr>
+  <tr><td>止损</td><td><b>${plan.slPrice!=null?fmt(plan.slPrice):"—"}</b></td><td>${esc(plan.slNote)}</td></tr>
+  <tr><td>接盘后硬止损（标的价格）</td><td><b>${plan.hardStop!=null?fmt(plan.hardStop):"—"}</b></td><td>杠杆 ETF 成本下 8%~10%，普通正股 10%~15%</td></tr>
+  <tr><td>时间止损</td><td><b>${draft.q3.maxWaitDays} 个交易日</b></td><td>站不回行权价或 5 日均线，${esc(draft.q3.plan)}</td></tr>
+  ${plan.maxLoss!=null?`<tr><td>价差/买方最大亏损</td><td><b>${fmt(plan.maxLoss)}</b></td><td>价差已锁死；买方最大亏全部权利金</td></tr>`:""}
+  <tr><td>三问</td><td colspan="2">Q1 止损 ${fmt(draft.q1.stopPrice)}，预估亏 ${fmt(draft.q1.acceptLoss)}（${draft.q1.canAccept?"能接受":"不能接受"}）；Q2 ${draft.q2.will==="hold"?"真愿意持有":"只贪权利金"}，砍价 ${fmt(draft.q2.cutPrice)}；Q3 最多等 ${draft.q3.maxWaitDays} 天</td></tr></table>
+  ${warns.map(w=>`<div class="${w.level==="danger"?"dangerbox":w.level==="warn"?"warn":"okbox"}">${esc(w.text)}</div>`).join("")}
+  ${warns.some(w=>w.level==="danger")?`<label><input type="checkbox" id="ackDrift" style="width:auto"> 我已知晓上述红色风险（策略漂移 / 仓位超限），仍坚持按此保存，并承担后果</label>`:""}`;
+  showStep(3);
+};
+$("btnBack2").onclick=()=>showStep(2);
+$("btnSaveTrade").onclick=()=>{
+  const ack=$("ackDrift"); if(ack&&!ack.checked) return alert("有红色风险提示时，请先勾选确认再保存");
+  const tr={id:uid(), createdAt:todayStr(), status:"open", ...draft, warnings:warningsFor(draft,draft.plan).map(w=>w.text)};
+  delete tr.plan; tr.plan=draft.plan;
+  DB.trades.push(tr); save(); draft=null; $("fTicker").value="";$("fQty").value="";$("fEntry").value="";$("fReason").value="";$("fNote").value="";$("fStrike").value="";$("fLongStrike").value="";$("fExpiry").value="";$("fDelta").value=""; showStep(1); renderAll(); alert("已保存。记住你的止损价，触发时手动执行。");
+};
+
+/* ---- 列表 / 平仓 / 删除 ---- */
+function tradeCard(t){
+  const p=t.plan||calcPlan(t);
+  const pnlCls=t.pnl!=null?(Number(t.pnl)>=0?"pnl-pos":"pnl-neg"):"";
+  return `<div class="trade">
+  <div class="row" style="justify-content:space-between"><div><b>${esc(t.ticker)}</b> <span class="badge ${t.assetClass==="leveraged"?"red":"blue"}">${assetLabel(t.assetClass)}</span> <span class="badge grey">${kindLabel(t.kind)}</span> <span class="badge ${t.status==="open"?"green":"grey"}">${t.status==="open"?"持仓中":"已平仓"}</span></div><div class="small">${esc(t.date)} · ${esc(t.reason||"")}</div></div>
+  <div class="meta">数量 ${t.qty} ${isOpt(t.kind)?"张":"股"} · 成交 ${fmt(t.entryPrice)}${isOpt(t.kind)?" /张":""}${t.strike?` · 行权 ${fmt(t.strike)}`:""}${t.longStrike?` · 买入腿 ${fmt(t.longStrike)}`:""}${t.expiry?` · 到期 ${esc(t.expiry)}（DTE ${t.dte??dteOf(t.expiry)}）`:""}${t.delta?` · Delta ${t.delta}`:""}<br>
+  止盈 <b>${p.tpPrice!=null?fmt(p.tpPrice):"—"}</b> · 止损 <b>${p.slPrice!=null?fmt(p.slPrice):"—"}</b>${p.hardStop!=null?` · 接盘硬止损 ${fmt(p.hardStop)}`:""} · 时间止损 ${t.q3?t.q3.maxWaitDays:5} 天<br>
+  三问：Q1 止损 ${t.q1?fmt(t.q1.stopPrice):"—"} / 预估亏 ${t.q1?fmt(t.q1.acceptLoss):"—"}；Q2 ${t.q2?(t.q2.will==="hold"?"真愿意持有":"只贪权利金"):"—"}，砍价 ${t.q2?fmt(t.q2.cutPrice):"—"}；Q3 最多等 ${t.q3?t.q3.maxWaitDays:5} 天，${t.q3?esc(t.q3.plan):""}<br>
+  ${t.note?`备注：${esc(t.note)}<br>`:""}${t.warnings&&t.warnings.length?`<span style="color:#8a5a00">⚠ ${esc(t.warnings.join("；"))}</span><br>`:""}
+  ${t.status==="closed"?`平仓：${esc(t.closeDate||"")} · 平仓价 ${fmt(t.closePrice)}（${esc(t.closeMethod||"")}）· 盈亏 <span class="${pnlCls}">${fmt(t.pnl)}</span>`:""}</div>
+  <div class="row" style="margin-top:8px">
+  ${t.status==="open"?`<button class="primary" data-close="${t.id}">平仓</button>`:""}
+  <button data-detail="${t.id}">详情</button>
+  <button class="danger" data-del="${t.id}">删除</button>
+  </div></div>`;
+}
+function renderTrades(){
+  const acc=selAcc(); if(!acc){$("openList").innerHTML="";$("closedList").innerHTML="";$("statsBox").innerHTML="";return;}
+  const list=DB.trades.filter(t=>t.accountId===acc.id);
+  const open=list.filter(t=>t.status==="open").sort((a,b)=>b.date.localeCompare(a.date));
+  const closed=list.filter(t=>t.status==="closed").sort((a,b)=>(b.closeDate||"").localeCompare(a.closeDate||""));
+  const realised=closed.reduce((s,t)=>s+(Number(t.pnl)||0),0);
+  $("statsBox").innerHTML=`<p class="muted">持仓 ${open.length} 笔 · 已平仓 ${closed.length} 笔 · 已实现盈亏 <b class="${realised>=0?"pnl-pos":"pnl-neg"}">${fmt(realised)}</b></p>`;
+  $("openList").innerHTML=open.length?open.map(tradeCard).join(""):`<p class="muted">该账户暂无持仓，点击上方“三步向导”新增一笔。</p>`;
+  $("closedList").innerHTML=closed.length?closed.map(tradeCard).join(""):`<p class="muted">暂无已平仓记录。</p>`;
+  document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>openClose(b.dataset.close));
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const tr=DB.trades.find(x=>x.id===b.dataset.del); if(confirm(`确定删除这笔 ${tr.ticker} ${kindLabel(tr.kind)} 的记录吗？删除后无法恢复（请先导出备份）。`)){DB.trades=DB.trades.filter(x=>x.id!==tr.id); save(); renderAll();}});
+  document.querySelectorAll("[data-detail]").forEach(b=>b.onclick=()=>{const tr=DB.trades.find(x=>x.id===b.dataset.detail); alert(`${tr.ticker} ${kindLabel(tr.kind)}\n开仓理由：${tr.reason||"—"}\n止盈：${tr.plan&&tr.plan.tpPrice!=null?fmt(tr.plan.tpPrice):"—"}（${tr.plan?tr.plan.tpNote:""}）\n止损：${tr.plan&&tr.plan.slPrice!=null?fmt(tr.plan.slPrice):"—"}（${tr.plan?tr.plan.slNote:""}）\nQ1/Q2/Q3 见卡片。`);});
+}
+let modalTradeId=null, modalMode=null;
+function openModal(title,html,okLabel){$("modalTitle").textContent=title; $("modalBody").innerHTML=html; $("modalOk").textContent=okLabel||"确认"; $("modal").classList.remove("hidden");}
+$("modalCancel").onclick=()=>$("modal").classList.add("hidden");
+function openClose(id){
+  const tr=DB.trades.find(x=>x.id===id); if(!tr) return; modalTradeId=id; modalMode="close";
+  const isExp=isSellOpt(tr.kind)||tr.kind==="buy_call"||tr.kind==="buy_put";
+  openModal("平仓 · "+tr.ticker+" "+kindLabel(tr.kind),`
+  <label>平仓日期</label><input id="cDate" type="date" value="${todayStr()}">
+  <label>平仓方式</label><select id="cMethod">
+    <option value="close">按市价平仓（填平仓价）</option>
+    ${isExp?`<option value="expire">到期归零 / 到期作废</option>`:""}
+    ${tr.kind==="sell_put"||tr.kind==="bull_put_spread"?`<option value="assigned">被行权接盘（填行权时标的价格）</option>`:""}
+  </select>
+  <label>平仓价 / 行权时标的价格（USD）</label><input id="cPrice" type="number" step="0.01" placeholder="到期归零可填 0">
+  <p class="small" id="cPreview"></p>
+  <p class="small">盈亏公式：正股多头（平仓-开仓）×股数；卖方期权（卖出权利金-买回价）×100×张数；买方期权反之。被行权时按内在价值结算，系统不自动生成接盘正股仓位，如需记录请另开一笔正股买入。</p>`,"确认平仓");
+  const upd=()=>{
+    const m=$("cMethod").value, cp=Number($("cPrice").value);
+    if(m==="expire"){const r=pnlOf(tr,0,"expire"); $("cPreview").innerHTML=`预估盈亏：<b>${fmt(r.pnl)}</b>（${esc(r.note||"")}）`;}
+    else if(m==="assigned"&&!isNaN(cp)){const intrinsic=Math.max(0,Number(tr.strike)-cp); const pnl=((Number(tr.entryPrice)-intrinsic)*100*Number(tr.qty)); $("cPreview").innerHTML=`被行权：内在价值 ${fmt(intrinsic)}，预估盈亏 <b>${fmt(pnl)}</b>（权利金 - 内在价值）×100×张数`;}
+    else if(!isNaN(cp)){const r=pnlOf(tr,cp,"close"); $("cPreview").innerHTML=`预估盈亏：<b>${fmt(r.pnl)}</b>`;}
+    else $("cPreview").textContent="";
+  };
+  $("cMethod").onchange=upd; $("cPrice").oninput=upd;
+}
+$("modalOk").onclick=()=>{
+  if(modalMode!=="close"||!modalTradeId) return;
+  const tr=DB.trades.find(x=>x.id===modalTradeId); const m=$("cMethod").value, cp=Number($("cPrice").value), dt=$("cDate").value||todayStr();
+  let pnl, closePrice=cp;
+  if(m==="expire"){const r=pnlOf(tr,0,"expire"); pnl=r.pnl; closePrice=0;}
+  else if(m==="assigned"){ if(isNaN(cp)) return alert("被行权请填行权时标的价格"); const intrinsic=Math.max(0,Number(tr.strike)-cp); pnl=+((Number(tr.entryPrice)-intrinsic)*100*Number(tr.qty)).toFixed(2); }
+  else { if(isNaN(cp)) return alert("请填平仓价"); const r=pnlOf(tr,cp,"close"); pnl=+r.pnl.toFixed(2); }
+  tr.status="closed"; tr.closeDate=dt; tr.closePrice=closePrice; tr.closeMethod=m==="expire"?"到期归零":m==="assigned"?"被行权":"平仓"; tr.pnl=pnl;
+  save(); $("modal").classList.add("hidden"); renderAll(); alert(`已平仓，盈亏 ${fmt(pnl)}。`);
+};
+
+/* ---- 导出 / 导入 / 示例 / 清空 ---- */
+$("btnExport").onclick=()=>{
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="TradingRuleSystem2026-backup-"+todayStr()+".json"; a.click(); URL.revokeObjectURL(a.href);
+};
+$("btnImport").onclick=()=>$("fileImport").click();
+$("fileImport").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return; const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result); if(!Array.isArray(d.accounts)||!Array.isArray(d.trades)) throw new Error("格式不对"); if(!confirm("导入会覆盖当前全部数据，确定吗？请确认已先导出备份。")) return; DB=d; save(); renderAll(); alert("导入成功");}catch(err){alert("导入失败：文件不是本系统导出的 JSON");}};
+  r.readAsText(f); e.target.value="";
+};
+$("btnDemo").onclick=()=>{
+  if(!DB.accounts.length) return alert("请先新建一个账户，再载入示例");
+  const acc=selAcc();
+  const t={id:uid(),createdAt:todayStr(),status:"open",accountId:acc.id,kind:"bull_put_spread",ticker:"TQQQ",assetClass:"leveraged",date:todayStr(),qty:1,underlyingPrice:68.5,entryPrice:0.85,strike:60,longStrike:55,expiry:new Date(Date.now()+35*86400000).toISOString().slice(0,10),delta:0.15,reason:"示例：QQQ 站上 MA200，趋势向上，卖 35 天价差收租",note:"示例数据，可删除"};
+  t.dte=dteOf(t.expiry); t.plan=calcPlan(t);
+  t.q1={stopPrice:60,acceptLoss:120,canAccept:true}; t.q2={will:"premium",cutPrice:60}; t.q3={maxWaitDays:5,plan:"第 5 天收盘前无条件平仓离场"};
+  t.warnings=warningsFor(t,t.plan).map(w=>w.text); DB.trades.push(t); save(); renderAll(); alert("已载入 1 笔 TQQQ 牛市看跌价差示例，熟悉后可删除。");
+};
+$("btnClear").onclick=()=>{if(confirm("确定清空全部账户和交易记录吗？此操作不可恢复，请先导出备份。")){DB={accounts:[],trades:[],selectedAccountId:null}; save(); renderAll();}};
+
+function renderAll(){renderAccounts(); renderTrades(); syncKindUI();}
+$("fDate").value=todayStr();
+renderAll();
+</script>
+</body>
+</html>
