@@ -32,6 +32,10 @@ details{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin
 .kv{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
 .kv td{border-bottom:1px solid var(--line);padding:7px 6px;vertical-align:top}
 .kv td:first-child{width:96px;color:var(--muted);white-space:nowrap;font-weight:600}
+.list-head{font-size:16px;margin:16px 0 6px;padding-left:10px;border-left:4px solid #111827}
+.sec-sep{border:none;border-top:2px solid #111827;margin:28px 0 0}
+#closedWrap{margin-top:14px}
+#closedWrap>summary{font-size:16px}
 .detailbox{background:#eef2f7;border:1px solid #dbe4ee;border-radius:8px;margin-top:10px;padding:10px 12px}
 .detailbox .kv td{border-bottom-color:#dbe4ee}
 .steps{display:flex;gap:6px;margin:10px 0} .step{flex:1;text-align:center;padding:8px;border-radius:8px;background:#e5e7eb;font-size:13px} .step.on{background:#111827;color:#fff}
@@ -152,7 +156,9 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:20px}
 <h2>交易记录</h2>
 <p class="muted">当前账户：<b id="curAccountName">—</b> · 持仓中按开仓日期倒序；已平仓在下方折叠区。</p>
 <div id="statsBox"></div>
+<h3 class="list-head">持仓中</h3>
 <div id="openList"></div>
+<hr class="sec-sep">
 <details id="closedWrap"><summary>已平仓记录（点击展开 / 折叠）</summary><div id="closedList" style="margin-top:10px"></div></details>
 </div>
 
